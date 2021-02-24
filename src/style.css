@@ -1,0 +1,10 @@
+.container-icaro {
+    margin:auto;
+}
+
+.validationMessage {
+    color: red;
+    font-size: 0.7rem;
+    width: 10%;
+    
+}
