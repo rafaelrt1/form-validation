@@ -3,6 +3,7 @@ import css from "./style.css"
 
 function AppViewModel() {
     var self = this;
+
     self.firstName = ko.observable().extend({ 
         required: {
             params: true,
@@ -57,6 +58,10 @@ function AppViewModel() {
             params: true,
             message: "O campo CEP é obrigatório!"
         },
+        pattern: {
+            params: "^[0-9]{5}-[0-9]{3}$", 
+            message: "O CEP deve estar no formato XXXXX-XXX, formado somente por números e hífen"
+        },
         minLength: {
             params: 9,
             message: "O CEP deve ter 8 números e hífen"
@@ -64,10 +69,6 @@ function AppViewModel() {
         maxLength: {
             params: 9,
             message: "O CEP deve ter 8 números e hífen"
-        },
-        pattern: {
-            params: "^[0-9]{5}-[0-9]{3}$", 
-            message: "O CEP deve estar no formato XXXXX-XXX, formado somente por números e hífen"
         }
     });
 
@@ -77,12 +78,12 @@ function AppViewModel() {
             message: "O campo telefone é obrigatório"
         },
         minLength: {
-            params: 9,
-            message: "O telefone deve ter 9 números"
+            params: 8,
+            message: "O telefone deve ter 8 ou 9 números"
         },
         maxLength: {
             params: 9,
-            message: "O telefone deve ter somente 9 números"
+            message: "O telefone deve ter 8 ou 9 números"
         },
         number: {
             params: true,
@@ -183,68 +184,101 @@ function AppViewModel() {
             message: "O estado deve estar no formato de UF (XX)"
         }
     });
+
+    self.bloqueiaUf = ko.observable(true);
+    self.bloqueiaEndereco = ko.observable(true);
+    self.bloqueiaComplemento = ko.observable(true);
+    self.bloqueiaBairro = ko.observable(true);
+    self.bloqueiaLocalidade = ko.observable(true);
+    self.bloqueiaNumero = ko.observable(true);
     
     self.buttonCep = function () {
-        self.Erros = ko.validation.group([self.firstName, self.lastName, self.telefone, self.ddd, self.cep]);    
-        if (self.Erros().length === 0) {
+        $(".erroCep").addClass("invisivel")
+        if(self.cep.isValid()) {
             var cepDigitado = appViewModel.cep();
-            api.getCep(cepDigitado).then((result) => {
-                self.endereco(result.logradouro);
-                self.localidade(result.localidade);
-                self.bairro(result.bairro);
-                self.uf(result.uf);
-                self.cep(result.cep);
-                self.complemento(result.complemento);
-                $("#enviar").removeAttr("disabled");
-                if(self.localidade().length !== 0) 
-                    $("#validationCustom04").attr("disabled", "disabled");
+                api.getCep(cepDigitado).then((result) => {
+                    self.numero("");
+                    if (result.erro) {
+                        $(".erroCep").removeClass("invisivel")
+                        self.endereco(result.logradouro);
+                        self.localidade(result.localidade);
+                        self.bairro(result.bairro);
+                        self.uf(result.uf);
+                        self.complemento(result.complemento);
+                        
+                        self.bloqueiaNumero(true);
+                        self.bloqueiaUf(true);
+                        self.bloqueiaLocalidade(true);
+                        self.bloqueiaComplemento(true);
+                        self.bloqueiaBairro(true);
+                        self.bloqueiaEndereco(true);
+                    }
+                    else {
+                        $(".erroCep").addClass("invisivel")
+                        self.endereco(result.logradouro);
+                        self.localidade(result.localidade);
+                        self.bairro(result.bairro);
+                        self.uf(result.uf);
+                        self.complemento(result.complemento);
+                        if(self.uf.isValid())
+                            self.bloqueiaUf(true);
+                        else 
+                            self.bloqueiaUf(false);
 
-                if(self.uf().length !== 0) 
-                    $("#validationCustom05").attr("disabled", "disabled");
-                
-                if(self.bairro().length !== 0)  
-                    $("#validationCustom07").attr("disabled", "disabled");
-                else 
-                    $("#validationCustom07").removeAttr("disabled");
-                
-                if(self.endereco().length !== 0)  
-                    $("#validationCustom09").attr("disabled", "disabled");
-                else 
-                    $("#validationCustom09").removeAttr("disabled");
-                
-                if(self.complemento().length !== 0)  
-                    $("#validationCustom011").attr("disabled", "disabled");
-                else 
-                    $("#validationCustom011").removeAttr("disabled");                          
-            })
-        }
-        else
-            self.Erros.showAllMessages();   
+                        if(self.numero.isValid())
+                            self.bloqueiaNumero(true);
+                        else 
+                            self.bloqueiaNumero(false);
+                        
+                        if(self.localidade.isValid())
+                            self.bloqueiaLocalidade(true);
+                        else 
+                            self.bloqueiaLocalidade(false);
+                        
+                        if(self.complemento.isValid() && self.complemento() !== "")
+                            self.bloqueiaComplemento(true);
+                        else 
+                            self.bloqueiaComplemento(false);
+                        
+                        if(self.bairro.isValid())
+                            self.bloqueiaBairro(true);
+                        else 
+                            self.bloqueiaBairro(false);
+                        
+                        if  (self.endereco.isValid())
+                            self.bloqueiaEndereco(true);
+                        else 
+                            self.bloqueiaEndereco(false);
+                    }                         
+                })   
+            }
     }
     self.enviar = function() {
-        self.Erros = ko.validation.group([self.firstName, self.lastName, self.telefone, self.ddd, self.cep, self.endereco, self.numero, self.complemento, self.bairro, self.localidade, self.uf]);
-            if (self.Erros().length === 0) {
-                var dados = {
-                    "Nome": self.firstName(),
-                    "Sobrenome": self.lastName(),
-                    "DDD": self.ddd(),
-                    "Telefone": self.telefone(),
-                    "CEP": self.cep(),
-                    "Endereço": self.endereco(),
-                    "Número": self.numero(),
-                    "Complemento": self.complemento(),
-                    "Bairro": self.bairro(),
-                    "Cidade": self.localidade(),
-                    "Estado": self.uf()
-                }
-                console.log(dados);
+        var dados = {
+                "Nome": self.firstName(),
+                "Sobrenome": self.lastName(),
+                "DDD": self.ddd(),
+                "Telefone": self.telefone(),
+                "CEP": self.cep(),
+                "Endereço": self.endereco(),
+                "Número": self.numero(),
+                "Complemento": self.complemento(),
+                "Bairro": self.bairro(),
+                "Cidade": self.localidade(),
+                "Estado": self.uf()
             }
+        console.log(dados);
     }
 }
 
 const appViewModel = new AppViewModel();
 
 window.appViewModel = appViewModel;
+
 ko.validation.init();
+
+appViewModel.isValid = ko.computed(function() {
+    return ko.validatedObservable(appViewModel).isValid();
+})
 
 ko.applyBindings(appViewModel);

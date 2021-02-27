@@ -4,7 +4,9 @@
 
 .validationMessage {
     color: red;
-    font-size: 0.7rem;
-    width: 10%;
-    
+    font-size: 0.7rem;  
+}
+
+.invisivel {
+    display: none;
 }
